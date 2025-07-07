@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSS Reader</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #2196F3;
+      --primary-dark: #1976D2;
+      --primary-light: #BBDEFB;
+      --secondary-color: #FF9800;
+      --secondary-light: #FFE0B2;
+      --accent-color: #00BCD4;
+      --success-color: #4CAF50;
+      --background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      --surface: #ffffff;
+      --surface-elevated: #ffffff;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --sidebar-width: 280px;
+      --header-height: 64px;
+      --shadow: 0 2px 4px rgba(0,0,0,0.1);
+      --shadow-hover: 0 4px 12px rgba(0,0,0,0.15);
+      --shadow-elevated: 0 8px 32px rgba(0,0,0,0.12);
+      --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    [data-theme="dark"] {
+      --primary-color: #64B5F6;
+      --primary-dark: #42A5F5;
+      --primary-light: #1A237E;
+      --secondary-color: #FFB74D;
+      --secondary-light: #3E2723;
+      --accent-color: #26C6DA;
+      --success-color: #66BB6A;
+      --background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+      --surface: #1e1e1e;
+      --surface-elevated: #2d2d2d;
+      --text-primary: #ffffff;
+      --text-secondary: #b3b3b3;
+      --border: #333333;
+      --shadow: 0 2px 4px rgba(0,0,0,0.3);
+      --shadow-hover: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-elevated: 0 8px 32px rgba(0,0,0,0.5);
+      --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    #app {
+      display: grid;
+      grid-template-areas: 
+        "header header"
+        "sidebar main";
+      grid-template-columns: var(--sidebar-width) 1fr;
+      grid-template-rows: var(--header-height) 1fr;
+      height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      grid-area: header;
+      background: var(--surface-elevated);
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-elevated) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-elevated);
+      z-index: 100;
+      position: relative;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gradient-primary);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      padding: 0 24px;
+    }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 600;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .app-title .material-icons {
+      font-size: 28px;
+      color: var(--primary-color);
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .icon-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: var(--gradient-accent);
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translate(-50%, -50%);
+      z-index: -1;
+      opacity: 0.1;
+    }
+
+    .icon-btn:hover::before {
+      width: 100%;
+      height: 100%;
+    }
+
+    .icon-btn:hover {
+      color: var(--primary-color);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      grid-area: sidebar;
+      background: var(--surface);
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-elevated) 100%);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px;
+      position: relative;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--gradient-secondary);
+      opacity: 0.6;
+    }
+
+    .sidebar h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .sidebar h3::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 12px;
+      height: 3px;
+      background: var(--gradient-accent);
+      border-radius: 2px;
+      transform: translateY(-50%);
+    }
+
+    /* Category Filter */
+    .category-filter {
+      margin-bottom: 32px;
+    }
+
+    #category-filter {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #category-filter:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    /* View Controls */
+    .view-controls {
+      margin-bottom: 32px;
+    }
+
+    .view-mode-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .view-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border: none;
+      background: transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .view-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: var(--gradient-primary);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: -1;
+      opacity: 0.1;
+    }
+
+    .view-btn:hover::before {
+      left: 0;
+    }
+
+    .view-btn:hover {
+      color: var(--primary-color);
+      transform: translateX(4px);
+    }
+
+    .view-btn.active {
+      background: var(--gradient-primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+      transform: translateX(4px);
+    }
+
+    .view-btn.active::before {
+      display: none;
+    }
+
+    /* Feeds Section */
+    .feeds-section {
+      margin-bottom: 32px;
+    }
+
+    .feed-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+
+    .feed-item:hover {
+      background: var(--border);
+    }
+
+    .feed-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .feed-title {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .feed-category {
+      display: block;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .delete-feed {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: all 0.2s;
+    }
+
+    .feed-item:hover .delete-feed {
+      opacity: 1;
+    }
+
+    .delete-feed:hover {
+      color: #f44336;
+      background: rgba(244, 67, 54, 0.1);
+    }
+
+    /* Main Content */
+    .main-content {
+      grid-area: main;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--text-secondary);
+      font-size: 16px;
+      position: relative;
+    }
+
+    .loading::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--gradient-accent);
+      opacity: 0.1;
+      transform: translate(-50%, -50%);
+      animation: pulse 2s infinite;
+    }
+
+    .loading .material-icons {
+      font-size: 48px;
+      margin-bottom: 16px;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 1;
+    }
+
+    .spinning {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Articles - Base Styles */
+    .article {
+      background: var(--surface);
+      background: linear-gradient(145deg, var(--surface) 0%, var(--surface-elevated) 100%);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      border: 1px solid var(--border);
+    }
+
+    .article::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gradient-accent);
+      transform: scaleX(0);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .article:hover::before {
+      transform: scaleX(1);
+    }
+
+    .article:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-4px);
+      border-color: var(--primary-light);
+    }
+
+    .article-main {
+      padding: 24px;
+    }
+
+    .article-header {
+      margin-bottom: 16px;
+    }
+
+    .article-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .article-meta {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .article-categories {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .category-tag {
+      background: var(--gradient-secondary);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .category-tag::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .category-tag:hover::before {
+      left: 100%;
+    }
+
+    .category-tag:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .article-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+
+    .article-title a {
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .article-title a:hover {
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .article-description {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .article-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    /* COMPACT VIEW - Only headlines, no descriptions or images */
+    .view-compact .article {
+      padding: 12px 24px;
+      margin-bottom: 12px;
+    }
+
+    .view-compact .article-main {
+      padding: 0;
+    }
+
+    .view-compact .article-header {
+      margin-bottom: 0;
+    }
+
+    .view-compact .article-title {
+      font-size: 16px;
+      margin-bottom: 0;
+    }
+
+    .view-compact .article-description {
+      display: none;
+    }
+
+    .view-compact .article-image {
+      display: none;
+    }
+
+    /* SUMMARY VIEW - Headlines and descriptions, no images */
+    .view-summary .article {
+      padding: 20px 24px;
+    }
+
+    .view-summary .article-main {
+      padding: 0;
+    }
+
+    .view-summary .article-title {
+      font-size: 18px;
+    }
+
+    .view-summary .article-description {
+      display: block;
+      margin-top: 8px;
+    }
+
+    .view-summary .article-image {
+      display: none;
+    }
+
+    /* RICH VIEW - Headlines, descriptions, and thumbnail images on the left */
+    .view-rich .article {
+      display: flex;
+      padding: 24px;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .view-rich .article-main {
+      flex: 1;
+      padding: 0;
+    }
+
+    .view-rich .article-image {
+      flex-shrink: 0;
+      width: 160px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 12px;
+      order: -1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .view-rich .article:hover .article-image {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .view-rich .article-title {
+      font-size: 18px;
+    }
+
+    .view-rich .article-description {
+      display: block;
+      margin-top: 8px;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transform: scale(0.9);
+      transition: transform 0.3s;
+    }
+
+    .modal.show .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 24px 0;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: var(--border);
+      color: var(--text-primary);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      padding: 0 24px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-primary, .btn-secondary {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--gradient-primary);
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(33, 150, 243, 0.3);
+    }
+
+    .btn-primary:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+      color: var(--text-primary);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      #app {
+        grid-template-areas: 
+          "header"
+          "main";
+        grid-template-columns: 1fr;
+        grid-template-rows: var(--header-height) 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: -100%;
+        top: var(--header-height);
+        width: var(--sidebar-width);
+        height: calc(100vh - var(--header-height));
+        z-index: 99;
+        transition: left 0.3s;
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .main-content {
+        padding: 16px;
+      }
+
+      .article-meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      /* Mobile responsive for rich view */
+      .view-rich .article {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .view-rich .article-image {
+        width: 100%;
+        height: 200px;
+        order: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1 class="app-title">
+          <span class="material-icons">rss_feed</span>
+          RSS Reader
+        </h1>
+        <div class="header-controls">
+          <button id="refresh-btn" class="icon-btn" title="Refresh all feeds">
+            <span class="material-icons">refresh</span>
+          </button>
+          <button id="add-feed-btn" class="icon-btn" title="Add feed">
+            <span class="material-icons">add</span>
+          </button>
+          <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+            <span class="material-icons">dark_mode</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="category-filter">
+        <h3>Filter by Category</h3>
+        <select id="category-filter">
+          <option value="all">All Categories</option>
+        </select>
+      </div>
+
+      <div class="view-controls">
+        <h3>View Mode</h3>
+        <div class="view-mode-buttons">
+          <button class="view-btn active" data-mode="compact">
+            <span class="material-icons">view_headline</span>
+            Compact
+          </button>
+          <button class="view-btn" data-mode="summary">
+            <span class="material-icons">view_stream</span>
+            Summary
+          </button>
+          <button class="view-btn" data-mode="rich">
+            <span class="material-icons">view_module</span>
+            Rich
+          </button>
+        </div>
+      </div>
+      
+      <div class="feeds-section">
+        <h3>Feeds</h3>
+        <div id="feeds-list"></div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div id="articles-container">
+        <div class="loading">
+          <span class="material-icons spinning">refresh</span>
+          Loading articles...
+        </div>
+      </div>
+    </main>
+
+    <!-- Add Feed Modal -->
+    <div id="add-feed-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add RSS Feed</h2>
+          <button class="close-btn">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <form id="add-feed-form">
+          <div class="form-group">
+            <label for="feed-url">RSS Feed URL</label>
+            <input type="url" id="feed-url" required placeholder="https://example.com/rss">
+          </div>
+          <div class="form-group">
+            <label for="feed-title">Title (optional)</label>
+            <input type="text" id="feed-title" placeholder="Custom feed name">
+          </div>
+          <div class="form-group">
+            <label for="feed-category">Category (optional)</label>
+            <select id="feed-category">
+              <option value="">Auto-detect</option>
+              <option value="Technology">Technology</option>
+              <option value="Sports">Sports</option>
+              <option value="Politics">Politics</option>
+              <option value="Business">Business</option>
+              <option value="Health">Health</option>
+              <option value="Science">Science</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="World News">World News</option>
+              <option value="Lifestyle">Lifestyle</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
+            <button type="submit" class="btn-primary">Add Feed</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
