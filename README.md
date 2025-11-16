@@ -20,7 +20,7 @@ A minimal, beautiful RSS feed reader built for self-hosting. Features a Material
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/hexydes/rss-reader
+git clone https://github.com/PicoPixl/rss-reader
 cd rss-reader
 ```
 
